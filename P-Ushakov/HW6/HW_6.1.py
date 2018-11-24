@@ -73,20 +73,21 @@ def walk_tuple(path):
         dr = os.listdir(path)
     except PermissionError:
         dr = []
-    dirs = tuple(d for d in dr if os.path.isdir(os.path.join(path, d)))
-    files = tuple(f for f in dr if os.path.isfile(os.path.join(path, f)))
+    dirs = tuple(sorted(d for d in dr if os.path.isdir(os.path.join(path, d))))
+    files = tuple(sorted(f for f in dr if os.path.isfile(os.path.join(path, f))))
     return path, dirs, files
 
 
 # recursive walk generator
 def recursive_walk(path):
     path, dirs, files = walk_tuple(path)
+    yield path, dirs, files
     for dr in dirs:
         dir_path = os.path.join(path, dr)
         inner_walk = recursive_walk(dir_path)
         for p, d, f in inner_walk:
             yield p, d, f
-    yield path, dirs, files
+
 
 
 # calculate file size
@@ -163,28 +164,55 @@ def find_list_tree_index(input_path, full_path, list_tree):
     return index
 
 
+# return True if dir is last in last stack tuple
+def is_last(stack, dir):
+    if stack != []:
+        dir_in_path = os.path.split(dir)[1]
+        dir_in_stack = stack[-1][2][-1]
+    if stack != [] and dir_in_path == dir_in_stack:
+        return True
+    else:
+        return False
+
+
+def tree_row(deep, element, is_last = False, is_dir = False):
+    if not is_last:
+        return " \u2223"*deep + "\u02EA" + element
+    else:
+        return " \u2223"*deep + "\u02EB" + element
+
+
 def tree(input_path):
     input_path = os.path.abspath(input_path)
     wlk = recursive_walk(input_path)
-    # list_tree accept:[full_path, is_dir, is_last = None for root, deep_level, element]
-    list_tree = [(input_path, True, None, 0, os.path.split(input_path)[1])]
+    stack = []
     for wlk_tuple in wlk:
         deep = deep_level(input_path, wlk_tuple)
-        is_last = True
-        is_dir = False
         fl_dir, dirs, fls = wlk_tuple
-        dirs, fls = map(lambda x: sorted(list(x)), (dirs, fls))
-        #todo: take index out of the scope
-        for fl in fls:
-            full_path = os.path.join(fl_dir, fl)
-            index = find_list_tree_index(input_path, full_path, list_tree)
-            list_tree.insert(index, (full_path, is_dir, is_last, deep,  fl))
-            is_last = False
 
+        # check is it last dir of level above
+        islast = is_last(stack, fl_dir)
 
-    # for wlk_tuple in sorted(list(wlk)):
-    #     deep = deep_level(path, wlk_tuple)
-    #     print(' |'*deep, "-", os.path.split(wlk_tuple[0])[1])
+        output_string = tree_row(deep, os.path.split(fl_dir)[1], islast, True)
+        yield output_string
+
+        if dirs == ():
+            for fl in fls:
+                output_string = tree_row(deep, fl)
+                yield output_string
+            if islast:
+                while stack != [] and islast:
+                    last_element = stack.pop(len(stack)-1)
+                    for fl in last_element[3]:
+                        output_string = tree_row(deep, fl)
+                        yield output_string
+                    fl_dir = os.path.split(fl_dir)[0]
+                    islast = is_last(stack, fl_dir)
+
+        # add tuple to stack and form output string
+        if dirs != ():
+            stack.append((deep, fl_dir, dirs, fls))
+
 
 
 def main():
@@ -194,7 +222,9 @@ def main():
     wlk = recursive_walk(p)
     # form the tree
     if t == 1:
-        tree(p)
+        t = tree(p)
+        for row in t:
+            print(row)
     # find max file
     elif t == 2:
         max_fl = max_file(wlk)
