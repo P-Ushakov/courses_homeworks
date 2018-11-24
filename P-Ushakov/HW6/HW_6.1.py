@@ -150,20 +150,6 @@ def deep_level(path, walk_tuple):
     return counter
 
 
-# return index to add new element or -1
-def find_list_tree_index(input_path, full_path, list_tree):
-    index = -1
-    enum_list_tree = enumerate(list_tree)
-    while len(full_path) >= len(input_path):
-        full_path, right_part = os.path.split(full_path)
-        for elt in enum_list_tree:
-            compared_part = elt[1][0][0:len(full_path)]
-            if full_path == compared_part:
-                index = elt[0]
-                break
-    return index
-
-
 # return True if dir is last in last stack tuple
 def is_last(stack, dir):
     if stack != []:
@@ -175,15 +161,19 @@ def is_last(stack, dir):
         return False
 
 
-def tree_row(deep, element, is_last = False, is_dir = False):
+def tree_row(deep, element, is_last = False, is_dir = True):
+    str_f = ""
+    if not is_dir:
+        str_f = "\u2500\u2500"
     if not is_last:
-        return " \u2223"*deep + "\u02EA" + element
+        return "\u2502  "*deep + "\u251C" + str_f + element
     else:
-        return " \u2223"*deep + "\u02EB" + element
+        return "\u2502  "*deep + "\u251C" + str_f + element
 
 
 def tree(input_path):
     input_path = os.path.abspath(input_path)
+    yield os.path.split(input_path)[0]
     wlk = recursive_walk(input_path)
     stack = []
     for wlk_tuple in wlk:
@@ -198,13 +188,13 @@ def tree(input_path):
 
         if dirs == ():
             for fl in fls:
-                output_string = tree_row(deep, fl)
+                output_string = tree_row(deep, fl, is_dir=False)
                 yield output_string
             if islast:
                 while stack != [] and islast:
                     last_element = stack.pop(len(stack)-1)
                     for fl in last_element[3]:
-                        output_string = tree_row(deep, fl)
+                        output_string = tree_row(deep, fl, is_dir=False)
                         yield output_string
                     fl_dir = os.path.split(fl_dir)[0]
                     islast = is_last(stack, fl_dir)
