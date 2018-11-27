@@ -23,6 +23,12 @@ def hlp_message():
 
 # get input path
 def inp(arg=[]):
+    """
+    User can enter arguments after file [path task]. Function accept ARGV, and check,
+    if present first parameter
+    :param arg: sys.argv or nothing
+    :return: str: first file argument or user input (suppose to be path)
+    """
     if len(arg) <= 1:
         i = input('Please input path:')
         return i
@@ -32,6 +38,11 @@ def inp(arg=[]):
 
 # check input path
 def inp_check(i=""):
+    """
+    Checking, if path data is correct
+    :param i: str: path to directory, "--help" for help message
+    :return: path if path is correct or help message if "--help" or error
+    """
     if os.path.isdir(i):
         return i                     # possible solution: return os.path.abspath(i)
     elif i in ("--help", "-help"):
@@ -44,6 +55,11 @@ def inp_check(i=""):
 
 # get input task
 def task(arg=[]):
+    """
+    Take task number from ARGV or if file haven't second argument - ask user input
+    :param arg: sys.argv
+    :return: int: number of task to execute
+    """
     if len(arg) <= 2:
         t = input('Please enter:\n'
                   ' "1" to see the folder tree\n'
@@ -56,6 +72,11 @@ def task(arg=[]):
 
 # check input task
 def task_check(t=0):
+    """
+    Check if entered data is valid task number
+    :param t: int: task number
+    :return: int task number if task is valid or error
+    """
     try:
         t = int(t)
     except ValueError:
@@ -69,9 +90,18 @@ def task_check(t=0):
 
 # form one element of walk object
 def walk_tuple(path):
+    """
+    Use system directory list command to scan given path
+    Form walk tuple (dir_path, (dir1, dir2, ...), (file1, file2, ...))
+
+    :param path: str: path to scan
+    :return: tuple: (dir_path, (dir1, dir2, ...), (file1, file2, ...))
+    """
     try:
         dr = os.listdir(path)
-    except PermissionError:
+    except PermissionError:         # exception to pass directories with denied access
+        dr = []
+    except OSError:                 # exception to pass "wine" directories
         dr = []
     dirs = tuple(sorted(d for d in dr if os.path.isdir(os.path.join(path, d))))
     files = tuple(sorted(f for f in dr if os.path.isfile(os.path.join(path, f))))
@@ -80,6 +110,11 @@ def walk_tuple(path):
 
 # recursive walk generator
 def recursive_walk(path):
+    """
+    Recursively walk through all directories from given path
+    :param path: str: path to walk
+    :return: generator with walk tuples (dir_path, (dir1, dir2, ...), (file1, file2, ...))
+    """
     path, dirs, files = walk_tuple(path)
     yield path, dirs, files
     for dr in dirs:
@@ -97,6 +132,11 @@ def file_size_calc(file):
 
 # generator of files with path and sizes ((path+file, size) , (path+file, size) , ...)
 def fls_info(walk_obj):
+    """
+    Calculate size of files of walk object
+    :param walk_obj: walk object
+    :return: tuple (file with path, file size)
+    """
     for walk_tpl in walk_obj:
         for f in walk_tpl[2]:
             file_with_path = os.path.join(walk_tpl[0], f)
@@ -122,6 +162,11 @@ max_file = max_file_decorator(fls_info)
 # return func for dir sort
 def dir_sort_decorator(func_fls_info):
     def inner(walk_obj):
+        """
+        This function return list of tuples (dir_position, dir_name, sum of all file sizes)
+        :param walk_obj: Walk object
+        :return: list of tuples (dir_position, dir_name, sum of all file sizes)
+        """
         result = [(0, '', '')]
         for wlk in walk_obj:
             w = wlk,
@@ -162,6 +207,14 @@ def is_last(stack, dir):
 
 
 def tree_row(deep, element, is_last = False, is_dir = True):
+    """
+    Form tree row for printing
+    :param deep: INT relative level of inclusion from given path
+    :param element: STR directory or file to print
+    :param is_last: True if this directory is last (needed to add files after last dir)
+    :param is_dir: True if element is directory
+    :return: STR: string to print
+    """
     str_f = ""
     if not is_dir:
         str_f = "\u2500\u2500"
@@ -172,6 +225,11 @@ def tree_row(deep, element, is_last = False, is_dir = True):
 
 
 def tree(input_path):
+    """
+    Generator to form the printed tree of directories
+    :param input_path: STR: root path to start build the tree
+    :return: STR tree rows
+    """
     input_path = os.path.abspath(input_path)
     yield os.path.split(input_path)[0]
     wlk = recursive_walk(input_path)
@@ -193,6 +251,7 @@ def tree(input_path):
             if islast:
                 while stack != [] and islast:
                     last_element = stack.pop(len(stack)-1)
+                    deep -= 1
                     for fl in last_element[3]:
                         output_string = tree_row(deep, fl, is_dir=False)
                         yield output_string
