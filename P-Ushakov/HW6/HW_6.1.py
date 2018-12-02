@@ -195,33 +195,59 @@ def deep_level(path, walk_tuple):
     return counter
 
 
-# return True if dir is last in last stack tuple
-def is_last(stack, dir):
+# return True if dir is last dir in last stack tuple
+def is_last_dir(stack, dir, include_files = False):
     if stack != []:
         dir_in_path = os.path.split(dir)[1]
         dir_in_stack = stack[-1][2][-1]
-    if stack != [] and dir_in_path == dir_in_stack:
-        return True
-    else:
-        return False
+        fls_in_stack = stack[-1][3]
+        if dir_in_path == dir_in_stack:
+            if not include_files:
+                return True
+            else:
+                if fls_in_stack == ():
+                    return True
+    return False
 
 
-def tree_row(deep, element, is_last = False, is_dir = True):
+def tree_row(deep, element, is_lst = False, is_dir = True, deep_map = []):
     """
     Form tree row for printing
     :param deep: INT relative level of inclusion from given path
     :param element: STR directory or file to print
-    :param is_last: True if this directory is last (needed to add files after last dir)
+    :param is_lst: True if this directory is last (needed to add files after last dir)
     :param is_dir: True if element is directory
     :return: STR: string to print
     """
     str_f = ""
+    str_last = "\u251C"
+    list_deep = ["\u2502  " for x in range(0, deep)]
+
+    # change pillars to spaces, if directory haven't files
+    for r in deep_map:
+            list_deep[r] = "   "
+    # file tail is longer for better separation
     if not is_dir:
         str_f = "\u2500\u2500"
-    if not is_last:
-        return "\u2502  "*deep + "\u251C" + str_f + element
-    else:
-        return "\u2502  "*deep + "\u251C" + str_f + element
+    # if dir is last we change last symbol; to conner instead turned "T"
+    if is_lst:
+        str_last = "\u2514"
+
+    row_with_pillars = "".join(list_deep)
+
+    return row_with_pillars + str_last + str_f + element
+
+
+# reduce map of roots if walk exit from sub folders
+def deep_map_reduce(deep_map, deep = 0):
+    if deep_map != []:
+        sorted(deep_map)
+        if deep_map!=[]:
+            while deep_map[-1] > deep:
+                deep_map.remove(deep_map[-1])
+                if deep_map == []:
+                    break
+    return deep_map
 
 
 def tree(input_path):
@@ -234,29 +260,48 @@ def tree(input_path):
     yield os.path.split(input_path)[0]
     wlk = recursive_walk(input_path)
     stack = []
+    deep_map = []
     for wlk_tuple in wlk:
         deep = deep_level(input_path, wlk_tuple)
         fl_dir, dirs, fls = wlk_tuple
 
         # check is it last dir of level above
-        islast = is_last(stack, fl_dir)
+        islast = is_last_dir(stack, fl_dir)
+        # check is last dir of level above and level above haven't files
+        islastelement = is_last_dir(stack, fl_dir, True)
 
-        output_string = tree_row(deep, os.path.split(fl_dir)[1], islast, True)
+        # print directory
+        output_string = tree_row(deep, os.path.split(fl_dir)[1], islastelement, True, deep_map=deep_map)
         yield output_string
 
+        # map with roots and spaces
+        deep_map = deep_map_reduce(deep_map, deep)
+        if islastelement:
+            deep_map.append(deep)
+
+        # print files
         if dirs == ():
-            for fl in fls:
-                output_string = tree_row(deep, fl, is_dir=False)
+            if fls != ():
+                for fl in fls[:-1]:
+                    output_string = tree_row(deep+1, fl, is_dir=False, deep_map=deep_map)
+                    yield output_string
+                output_string = tree_row(deep+1, fls[-1], is_lst=True, is_dir=False, deep_map=deep_map)
                 yield output_string
+
             if islast:
                 while stack != [] and islast:
                     last_element = stack.pop(len(stack)-1)
-                    deep -= 1
-                    for fl in last_element[3]:
-                        output_string = tree_row(deep, fl, is_dir=False)
+                    if last_element[3] != ():
+                        for fl in last_element[3][:-1]:
+                            output_string = tree_row(deep, fl, is_dir=False, deep_map=deep_map)
+                            yield output_string
+                        output_string = tree_row(deep, last_element[3][-1], is_lst=True,
+                                                 is_dir=False, deep_map=deep_map)
                         yield output_string
+                    deep -= 1
                     fl_dir = os.path.split(fl_dir)[0]
-                    islast = is_last(stack, fl_dir)
+                    islast = is_last_dir(stack, fl_dir)
+                    deep_map = deep_map_reduce(deep_map, deep)
 
         # add tuple to stack and form output string
         if dirs != ():
@@ -289,4 +334,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
