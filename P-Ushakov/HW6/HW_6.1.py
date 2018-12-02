@@ -217,6 +217,7 @@ def tree_row(deep, element, is_lst = False, is_dir = True, deep_map = []):
     :param element: STR directory or file to print
     :param is_lst: True if this directory is last (needed to add files after last dir)
     :param is_dir: True if element is directory
+    :param deep_map: list with numbers of finished roots to change root line to space
     :return: STR: string to print
     """
     str_f = ""
@@ -242,11 +243,10 @@ def tree_row(deep, element, is_lst = False, is_dir = True, deep_map = []):
 def deep_map_reduce(deep_map, deep = 0):
     if deep_map != []:
         sorted(deep_map)
-        if deep_map!=[]:
-            while deep_map[-1] > deep:
-                deep_map.remove(deep_map[-1])
-                if deep_map == []:
-                    break
+        while deep_map[-1] > deep:
+            deep_map.remove(deep_map[-1])
+            if deep_map == []:
+                break
     return deep_map
 
 
@@ -303,10 +303,9 @@ def tree(input_path):
                     islast = is_last_dir(stack, fl_dir)
                     deep_map = deep_map_reduce(deep_map, deep)
 
-        # add tuple to stack and form output string
+        # add walk tuple to stack
         if dirs != ():
             stack.append((deep, fl_dir, dirs, fls))
-
 
 
 def main():
