@@ -7,6 +7,8 @@ async def async_tuple(path=""):
         ld = os.listdir(path)
     except PermissionError:
         ld = ()
+    except OSError:
+        ld = ()
     d = tuple(x for x in ld if os.path.isdir(os.path.join(path, x)))
     f = tuple(x for x in ld if os.path.isfile(os.path.join(path, x)))
     return path, d, f
