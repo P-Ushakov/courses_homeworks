@@ -14,6 +14,7 @@
 
 import os
 from sys import argv
+import AsyncWalk
 
 
 # help message
@@ -124,7 +125,6 @@ def recursive_walk(path):
             yield p, d, f
 
 
-
 # calculate file size
 def file_size_calc(file):
     return os.path.getsize(file)
@@ -196,7 +196,7 @@ def deep_level(path, walk_tuple):
 
 
 # return True if dir is last dir in last stack tuple
-def is_last_dir(stack, dir, include_files = False):
+def is_last_dir(stack, dir, include_files=False):
     if stack != []:
         dir_in_path = os.path.split(dir)[1]
         dir_in_stack = stack[-1][2][-1]
@@ -210,7 +210,7 @@ def is_last_dir(stack, dir, include_files = False):
     return False
 
 
-def tree_row(deep, element, is_lst = False, is_dir = True, deep_map = []):
+def tree_row(deep, element, is_lst=False, is_dir=True, deep_map=[]):
     """
     Form tree row for printing
     :param deep: INT relative level of inclusion from given path
@@ -240,7 +240,7 @@ def tree_row(deep, element, is_lst = False, is_dir = True, deep_map = []):
 
 
 # reduce map of roots if walk exit from sub folders
-def deep_map_reduce(deep_map, deep = 0):
+def deep_map_reduce(deep_map, deep=0):
     if deep_map != []:
         sorted(deep_map)
         while deep_map[-1] > deep:
@@ -312,7 +312,7 @@ def main():
     # get data
     p = (inp_check(inp(argv)))
     t = (task_check(task(argv)))
-    wlk = recursive_walk(p)
+    wlk =AsyncWalk.awalk(p)   # can be used recursive walk wlk = recursive_walk(p)
     # form the tree
     if t == 1:
         t = tree(p)
